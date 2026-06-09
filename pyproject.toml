@@ -1,0 +1,39 @@
+[tool.ruff]
+# Target Python version
+target-version = "py39"
+
+# Set the maximum line length
+line-length = 100
+
+# Enable select rule categories
+# E: pycodestyle errors
+# W: pycodestyle warnings
+# F: Pyflakes
+# I: isort (import sorting)
+# C90: McCabe complexity
+# N: pep8-naming
+# UP: pyupgrade
+# B: flake8-bugbear
+select = ["E", "W", "F", "I", "C90", "N", "UP", "B"]
+
+# Files or directories to ignore
+exclude = [
+    ".git",
+    "__pycache__",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".venv",
+    "venv",
+    "env",
+    "setup",
+]
+
+[tool.ruff.lint.mccabe]
+# Maximum McCabe complexity complexity threshold
+max-complexity = 10
+
+[tool.ruff.lint.isort]
+# Ensure imports are grouped nicely
+combine-as-imports = true
+section-order = ["future", "standard-library", "third-party", "first-party", "local-folder"]
+known-first-party = ["src"]

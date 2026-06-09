@@ -14,16 +14,16 @@ This guide provides supplementary setup and execution instructions for the daily
 
 The code is structured as a modular Python package located in the `src/` directory. By splitting the concerns, the components are fully reusable across different environments (e.g. standalone scripts, Cron jobs, AWS Lambda, or orchestration tools like Airflow/Prefect):
 
-- **`src/config.py`**: Reads configuration variables from environment variables (with `.env` file loading fallback).
-- **`src/db/`**: Reusable database clients:
-  - `postgres_client.py`: Class `PostgresClient` context manager for Postgres queries.
-  - `mysql_client.py`: Class `MySQLClient` context manager for MySQL queries.
-- **`src/report_generator.py`**: A pure functional utility `generate_report` that transforms raw DB records into the required CSV format (`Name, Number of lessons completed, Date`). Contains no side-effects.
-- **`src/aws/`**: Reusable AWS service clients:
-  - `s3_service.py`: Class `S3Service` utility for S3 uploads with standard 5-attempt retry.
-  - `ses_service.py`: Class `SESService` utility for sending raw MIME emails with attachments with standard 5-attempt retry.
-- **`src/logger.py`**: Custom centralized logger helper to output all system logs in JSON format.
-- **`src/main.py`**: The central orchestrator that glues the modules together. Supports a `--dry-run` execution flag.
+
+### Module Breakdown
+
+* **`src/config.py`**: Holds system configuration and dynamically loads `.env` variables from the root or `setup/` directories.
+* **`src/db/`**: Reusable context-managed database adapters (`postgres_client.py` and `mysql_client.py`) equipped with server-side chunk generators.
+* **`src/report_generator.py`**: A pure functional utility `generate_report` that acts as the ETL processor.
+* **`src/aws/`**: Clean wrappers for AWS integrations (`s3_service.py` and `ses_service.py`).
+* **`src/exceptions.py`**: Centralized custom exceptions (`DatabaseError`, `EmailDispatchError`) for structured error management.
+* **`src/logger.py`**: Centralized logger that outputs structured logs in JSON format for easy ingestion.
+* **`src/main.py`**: Central orchestrator controlling execution flow and dry-runs.
 
 ---
 
@@ -31,18 +31,14 @@ The code is structured as a modular Python package located in the `src/` directo
 
 ### 1. Database Setup
 
-
 ```bash
 cd setup
-
-
-# Start the containers
+copy .env.example .env  # Create environment config
 docker-compose up --build
-
 ```
 This initializes:
-- PostgreSQL with a `mindtickle_users` table and sample active/inactive users.
-- MySQL with a `lesson_completion` table containing sample completion data.
+- PostgreSQL with a `mindtickle_users` table.
+- MySQL with a `lesson_completion` table.
 
 ### 2. Python Environment Setup
 
@@ -52,17 +48,20 @@ source venv/Scripts/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
+---
+
 ## 🚀 Execution
 
 ### Mode A: Dry Run (No AWS credentials needed)
 
+Runs the pipeline using streamed database extraction and pandas aggregation, saving the final CSV report locally to the current directory:
 ```bash
 python -m src.main --dry-run
 ```
 
 ### Mode B: Production Run (Requires AWS credentials)
 
-1. Ensure the following environment variables are set:
+1. Ensure the following environment variables are set (in your `.env` or system environment):
    - `AWS_ACCESS_KEY_ID`
    - `AWS_SECRET_ACCESS_KEY`
    - `AWS_DEFAULT_REGION`
